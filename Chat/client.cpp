@@ -1,15 +1,22 @@
 /*
 если на 2000 порту запущен сервер, то данная программа присоединится и отправит серверу введенную строку message.
-если сервер может открыть данный файл, он пошлет строку
-ОК размер\r\n 
-а далее передаст все байты файла f.txt
-если файл открыть не удалось, то сервер ответит строкой ERROR.
+если сервер получит сообщение, то разошлет его всем подключенным клиентам
 
-Например, пусть в файле f.txt находится строка "abcd". Тогда диалог клиента и сервера будет выглядеть так:
-клиент:
-f.txt\r\n
+Пример работы:
+клиент 1:
+Hello my name is ***!
+клиент 2:
+
 сервер:
-OK 4\r\nabcd
+SENDING OUT: Hello my name is ***!
+
+
+клиент 1:
+Hello my name is ***!
+клиент 2:
+Hello my name is ***!
+сервер:
+FINISHED
 */
 
 #include <webby.hpp>
@@ -34,10 +41,30 @@ int main(int argc, char** argv)
 	new_message();	
 }
 
-// вызывается после отправки запроса о файле
+// оптравляем сообщение
+void new_message()
+{
+	if(sock) sock.close();
+
+	// соединяемся с хостом
+	sock.connect(my_ip(), "2000");
+
+	// вводим сообщение
+	getline(cin, message);
+	if(message == "exit from chat" || message == "Exit from chat")
+		exit(0);
+
+	// посылаем сообщение на сервер. после посылки запроса будет вызвана функция message_sent
+	sock.send(message + "\r\n", message_sent);
+	
+	// запускаем ядро webby
+	webby::run();
+}
+
+// вызывается после отправки сообщения
 void message_sent()
 {
-	// проверяем, все ли успешно. если да, то просим ядро webby принимать данные, пока не встретится 
+	// проверяем, все ли успешно. если да, то просим ядро webby принимать данные, пока не встретится
 	// последовательность символов \r\n. как только встретится, webby сообщит нам об этом, вызвав 
 	// функцию read_message
 
@@ -61,13 +88,12 @@ void read_message()
 	string text;
 	sock.get_line(text, "\r\n");
 
-	// в строке может быть записано: OK размер, или ERROR.
 	// читаем первое слово (то есть до пробела)
 	stringstream s(text);
 	string status;
 	s >> status;
 
-	// Если OK, то читаем размер и начинаем прием файла
+	// если все хорошо выводим сообщение на экран
 	if(status != "ERROR")
 	{
 		cout << text << endl;
@@ -81,6 +107,30 @@ void read_message()
 		cout << "Server returned error: " << error_text << endl;
 		new_message();
 	}
+}
+
+// Получаем IP-адрес клиента
+string my_ip()
+{
+	string s;
+    struct ifaddrs * ifAddrStruct=NULL;
+    struct ifaddrs * ifa=NULL;
+    void * tmpAddrPtr=NULL;
+
+    getifaddrs(&ifAddrStruct);
+
+    for (ifa = ifAddrStruct; ifa != NULL; ifa = ifa->ifa_next)
+	{
+        if (!ifa->ifa_addr) continue;
+        if (ifa->ifa_addr->sa_family == AF_INET)
+		{
+            tmpAddrPtr=&((struct sockaddr_in *)ifa->ifa_addr)->sin_addr;
+            char addressBuffer[INET_ADDRSTRLEN];
+            inet_ntop(AF_INET, tmpAddrPtr, addressBuffer, INET_ADDRSTRLEN);
+			s = addressBuffer;
+        }
+    }
+	return s;
 }
 
 // вызывается при приеме данных файла
@@ -110,80 +160,4 @@ void on_data()
 }
 */
 
-void new_message()
-{
-	if(sock) sock.close();
-
-	// соединяемся с хостом
-	sock.connect(my_ip(), "2000");
-
-	// вводим сообщение
-	getline(cin, message);
-	if(message == "exit from chat" || message == "Exit from chat")
-		exit(0);
-
-	// посылаем сообщение на сервер. после посылки запроса будет вызвана функция message_sent
-	sock.send(message + "\r\n", message_sent);
-	
-	// запускаем ядро webby
-	webby::run();
-}
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-// Получаем IP-адрес клиента
-string my_ip()
-{
-	string s;
-    struct ifaddrs * ifAddrStruct=NULL;
-    struct ifaddrs * ifa=NULL;
-    void * tmpAddrPtr=NULL;
-
-    getifaddrs(&ifAddrStruct);
-
-    for (ifa = ifAddrStruct; ifa != NULL; ifa = ifa->ifa_next)
-	{
-        if (!ifa->ifa_addr) continue;
-        if (ifa->ifa_addr->sa_family == AF_INET)
-		{
-            tmpAddrPtr=&((struct sockaddr_in *)ifa->ifa_addr)->sin_addr;
-            char addressBuffer[INET_ADDRSTRLEN];
-            inet_ntop(AF_INET, tmpAddrPtr, addressBuffer, INET_ADDRSTRLEN);
-			s = addressBuffer;
-        }
-    }
-	return s;
-}
 

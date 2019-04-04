@@ -6,7 +6,7 @@ using namespace std;
 
 webby::Socket client;
 
-vector<string> messages;
+//vector<string> messages;
 
 void on_connect();
 void send_out();
@@ -14,10 +14,13 @@ void send_out();
 void reset();
 //void send_data();
 
+// получаем сообщение
 int main()
 {
+	// ожидаем подключение н апорт 2000, которое будет связано с sock
 	webby::accept(client, on_connect, 2000);
 
+	// запускаем ядро webby
 	webby::run();
 }
 
@@ -27,8 +30,10 @@ void reset()
 	webby::accept(client, on_connect, 2000);
 }
 
+// пустая функция
 void empty(){}
 
+// рассылаем сообщение всем клиентам
 void send_out()
 {
 	if(!client)
@@ -56,6 +61,7 @@ void send_out()
 
 }
 
+// при успешном подключении читаем сообщение и вызываем функцию send_out()
 void on_connect()
 {
 	if(!client) 
@@ -66,7 +72,9 @@ void on_connect()
 
 	client.read_until("\r\n", send_out);
 }
+
 /*
+ * будет нужна для обмена файлами между пользователями
 void send_data()
 {
 	const int mtu = 512;
@@ -85,12 +93,5 @@ void send_data()
 		cout << "Data transfer finished" << endl;
 		reset();
 	}
-}
-
-void send_out()
-{
-	stringstream reply;
-	reply << "OK " << file_size << "\r\n";
-	client.send(header.str(), send_data);
 }
 */
