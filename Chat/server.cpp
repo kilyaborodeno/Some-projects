@@ -4,12 +4,14 @@
 
 using namespace std;
 
-webby::Socket client;
-
+webby::Socket new_sock;;
+webby::Socket on_service;
 //vector<string> messages;
 
 void on_connect();
 void send_out();
+//void service_client(webby::Socket client);
+bool fr = true;
 
 void reset();
 //void send_data();
@@ -17,8 +19,8 @@ void reset();
 // получаем сообщение
 int main()
 {
-	// ожидаем подключение н апорт 2000, которое будет связано с sock
-	webby::accept(client, on_connect, 2000);
+	// ожидаем подключение на порт 2000, которое будет связано с sock
+	webby::accept(on_service, on_connect, 2000);
 
 	// запускаем ядро webby
 	webby::run();
@@ -26,8 +28,25 @@ int main()
 
 void reset()
 {
-	client.close();
-	webby::accept(client, on_connect, 2000);
+	try{
+		// ожидаем подключение на порт 2000, которое будет связано с sock
+		webby::accept(new_sock, on_connect, 2000);
+
+		// запускаем ядро webby
+		webby::run();
+
+	}catch(std::exception& e){};
+
+	on_connect();
+	//on_service.close();
+//	webby::accept(on_service, on_connect, 2000);
+	/*
+	for(auto i : clients)
+	{
+		cout << i << ' ' << endl;
+		webby::accept(on_service, on_connect, 2000);
+	}
+	*/
 }
 
 // пустая функция
@@ -36,7 +55,7 @@ void empty(){}
 // рассылаем сообщение всем клиентам
 void send_out()
 {
-	if(!client)
+	if(!on_service)
 	{
 		cout << "Client disconnected" << endl;
 		reset();
@@ -44,19 +63,24 @@ void send_out()
 	}
 	cout << "SENDING OUT:  ";
 
-	string message;
-	client.get_line(message, "\r\n");
+	string message = "";
+	try{
+		new_sock.get_line(message, "\r\n");
+	}catch(std::exception& e){};
+
+	if(message == "") on_service.get_line(message, "\r\n");
 	cout << message << endl;
 
 	if(message != "")
 	{
 		cout << "FINISHED" << endl;
-		client.send(message+"\r\n", reset);
+		if(new_sock) new_sock.send(message+"\r\n", reset);
+		if(on_service) on_service.send(message+"\r\n", reset);
 	}
 	else
 	{
 		cout << "An error has occurred " << endl;
-		client.send("ERROR error\r\n", reset);
+		on_service.send("ERROR error\r\n", reset);
 	}
 
 }
@@ -64,14 +88,34 @@ void send_out()
 // при успешном подключении читаем сообщение и вызываем функцию send_out()
 void on_connect()
 {
-	if(!client) 
+	//if(fr) on_service;// = clients[0];
+	if(!on_service) 
 	{
 		cout << "Couldn't accept connection" << endl;
+		reset();
 		return;
 	}
 
-	client.read_until("\r\n", send_out);
+	try{
+		new_sock.read_until("\r\n", send_out);
+	}catch(std::exception& e){};
+
+	on_service.read_until("\r\n", send_out);
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 /*
  * будет нужна для обмена файлами между пользователями
@@ -85,7 +129,7 @@ void send_data()
 	if(n) 
 	{
 		file.read(buf, n);
-		client.send(buf, n, send_data);
+		on_service.send(buf, n, send_data);
 		bytes_sent += n;
 	}
 	else

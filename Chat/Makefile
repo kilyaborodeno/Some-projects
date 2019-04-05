@@ -1,5 +1,5 @@
 all:
-	clang++ -std=c++14 -g -I. -Wall -lGLU -lGL -lglut *.cpp
+	clang++ -std=c++14 -g -I. -Wall server.cpp
 
 run: all
 	./a.out

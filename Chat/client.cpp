@@ -11,7 +11,7 @@ Hello my name is ***!
 SENDING OUT: Hello my name is ***!
 
 
-клиент 1:
+клиен 1:
 Hello my name is ***!
 клиент 2:
 Hello my name is ***!
@@ -28,6 +28,8 @@ FINISHED
 using namespace std;
 using namespace cnv;
 
+char port[4] = {2,0,0,0};
+
 webby::Socket sock;
 string message;
 void message_sent();
@@ -38,21 +40,21 @@ void new_message();
 
 int main(int argc, char** argv)
 {
+	// соединяемся с хостом
+	sock.connect(my_ip(), "2000");
 	new_message();	
 }
 
 // оптравляем сообщение
 void new_message()
 {
-	if(sock) sock.close();
-
-	// соединяемся с хостом
-	sock.connect(my_ip(), "2000");
-
 	// вводим сообщение
 	getline(cin, message);
-	if(message == "exit from chat" || message == "Exit from chat")
+	if(message == "exit now" || message == "Exit now")
+	{
+		sock.close();
 		exit(0);
+	}
 
 	// посылаем сообщение на сервер. после посылки запроса будет вызвана функция message_sent
 	sock.send(message + "\r\n", message_sent);
