@@ -28,7 +28,6 @@ FINISHED
 using namespace std;
 using namespace cnv;
 
-char port[4] = {2,0,0,0};
 
 webby::Socket sock;
 string message;
@@ -37,6 +36,8 @@ void read_message();
 void on_data();
 string my_ip();
 void new_message();
+
+bool name = true;
 
 int main(int argc, char** argv)
 {
@@ -48,6 +49,11 @@ int main(int argc, char** argv)
 // оптравляем сообщение
 void new_message()
 {
+	if(name)
+	{
+		cout << "Input your name: ";
+		name = false;
+	}
 	// вводим сообщение
 	getline(cin, message);
 	if(message == "exit now" || message == "Exit now")
@@ -96,19 +102,13 @@ void read_message()
 	s >> status;
 
 	// если все хорошо выводим сообщение на экран
-	if(status != "ERROR")
+	if(status != "ERROR" && status != "")
 	{
 		cout << text << endl;
 		new_message();
 	}
 	else
-	{
-		// сервер мог отправить ERROR и через пробел написать сообщение, читаем его и выводим на экран
-		string error_text;
-		getline(s, error_text);
-		cout << "Server returned error: " << error_text << endl;
 		new_message();
-	}
 }
 
 // Получаем IP-адрес клиента
